@@ -10,7 +10,7 @@ created/forked from conferences.py by wesc on 2014 may 24
 
 """
 
-__author__ = 'wesc+api@google.com (Wesley Chun)'
+__author__ = 'wesc+api@google.com (Wesley Chun) hyomin.choi@gmail.com (Hyomin Choi)'
 
 import httplib
 import endpoints
@@ -79,6 +79,34 @@ class ConferenceForm(messages.Message):
 class ConferenceForms(messages.Message):
     """ConferenceForms -- multiple Conference outbound form message"""
     items = messages.MessageField(ConferenceForm, 1, repeated=True)
+
+
+class Session(ndb.Model):
+    """Session -- Session object"""
+    name            = ndb.StringProperty(required=True)
+    conferenceName  = ndb.StringProperty()
+    speaker         = ndb.StringProperty()
+    highlights      = ndb.StringProperty()
+   # date            = ndb.DateProperty()
+    duration        = ndb.StringProperty(required=True)
+    typeOfsession   = ndb.StringProperty(required=True)
+
+
+class SessionForm(messages.Message):
+    """SessionForm -- Session outbound form message"""
+    name            = messages.StringField(1)
+    conferenceName  = messages.StringField(2)
+    speaker         = messages.StringField(3)
+    highlights      = messages.StringField(4)
+    #date            = messages.StringField(5) #DateTimeField()
+    duration        = messages.StringField(6)
+    typeOfsession   = messages.StringField(7)
+    websafeKey      = messages.StringField(8)
+
+class SessionForms(messages.Message):
+    """SessionForms -- multiple Session outbound form message"""
+    items = messages.MessageField(SessionForm, 1, repeated=True)
+
 
 class TeeShirtSize(messages.Enum):
     """TeeShirtSize -- t-shirt size enumeration value"""

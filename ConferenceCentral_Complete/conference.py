@@ -8,9 +8,11 @@ $Id: conference.py,v 1.25 2014/05/24 23:42:19 wesc Exp wesc $
 
 created by wesc on 2014 apr 21
 
+added functionality in December 2015
+
 """
 
-__author__ = 'wesc+api@google.com (Wesley Chun)'
+__author__ = 'wesc+api@google.com (Wesley Chun), hyomin.choi@gmail.com (Hyomin Choi)'
 
 
 from datetime import datetime
@@ -36,6 +38,9 @@ from models import ConferenceForms
 from models import ConferenceQueryForm
 from models import ConferenceQueryForms
 from models import TeeShirtSize
+from models import Session
+from models import SessionForm
+#from models import SessionForms
 
 from settings import WEB_CLIENT_ID
 from settings import ANDROID_CLIENT_ID
@@ -52,10 +57,18 @@ ANNOUNCEMENT_TPL = ('Last chance to attend! The following conferences '
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 DEFAULTS = {
+    ## For Conference ##
     "city": "Default City",
     "maxAttendees": 0,
     "seatsAvailable": 0,
     "topics": [ "Default", "Topic" ],
+}
+
+DEFAULTS_SESSION = {
+    ## For Session ##
+    "highlights": "Default_highlights",
+    "duration": "1h",
+    "speaker": "Default_Speaker"
 }
 
 OPERATORS = {
@@ -164,6 +177,70 @@ class ConferenceApi(remote.Service):
         )
         return request
 
+    # - - - Session objects - - - - - - - - - - - - - - - - -
+
+    def _copySessionToForm(self, session):
+        """Copy relevant fields from Session to SessionForm."""
+        sf = SessionForm()
+        for field in sf.all_fields():
+            if hasattr(session, field.name):
+                # convert Date to date string; just copy others
+                if field.name.endswith('date'):
+                    setattr(sf, field.name, str(getattr(session, field.name)))
+                else:
+                    setattr(sf, field.name, getattr(session, field.name))
+            elif field.name == "websafeKey":
+                setattr(sf, field.name, session.key.urlsafe())
+
+        sf.check_initialized()
+        return sf
+
+
+    def _createSessionObject(self, request):
+        """Create or update Conference object, returning ConferenceForm/request."""
+        # preload necessary data items
+        user = endpoints.get_current_user()
+        if not user:
+            raise endpoints.UnauthorizedException('Authorization required')
+        user_id = getUserId(user)
+
+        if not request.name:
+            raise endpoints.BadRequestException("Session 'name' field required")
+
+        if not request.conferenceName:
+            raise endpoints.BadRequestException("Conference field required")
+
+
+        # copy ConferenceForm/ProtoRPC Message into dict
+        data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+        del data['websafeKey']
+
+        # add default values for those missing (both data model & outbound Message)
+        for df in DEFAULTS_SESSION:
+            if data[df] in (None, []):
+                data[df] = DEFAULTS_SESSION[df]
+                setattr(request, df, DEFAULTS_SESSION[df])
+
+        # convert dates from strings to Date objects; set month based on start_date
+        #if data['date']:
+        #    data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
+        #else:
+        #    data['date'] = 0
+
+
+        # generate Profile Key based on user ID and Conference
+        # ID based on Profile key get Conference key from ID
+        #p_key = ndb.Key(Conference, name)
+        #s_id = Session.allocate_ids(size=1, parent=p_key)[0]
+        #s_key = ndb.Key(Session, s_id, parent=p_key)
+        #data['key'] = s_key
+        data['conferenceName'] = request.name 
+
+        # create Session
+        Session(**data).put()
+
+        return request
+
 
     @ndb.transactional()
     def _updateConferenceObject(self, request):
@@ -205,12 +282,19 @@ class ConferenceApi(remote.Service):
         return self._copyConferenceToForm(conf, getattr(prof, 'displayName'))
 
 
+
+
     @endpoints.method(ConferenceForm, ConferenceForm, path='conference',
             http_method='POST', name='createConference')
     def createConference(self, request):
         """Create new conference."""
         return self._createConferenceObject(request)
 
+    @endpoints.method(SessionForm, SessionForm, path='session',
+            http_method='POST', name='createSession')
+    def createSession(self, request):
+        """Create new session."""
+        return self._createSessionObject(request)
 
     @endpoints.method(CONF_POST_REQUEST, ConferenceForm,
             path='conference/{websafeConferenceKey}',
@@ -233,7 +317,6 @@ class ConferenceApi(remote.Service):
         prof = conf.key.parent().get()
         # return ConferenceForm
         return self._copyConferenceToForm(conf, getattr(prof, 'displayName'))
-
 
     @endpoints.method(message_types.VoidMessage, ConferenceForms,
             path='getConferencesCreated',
