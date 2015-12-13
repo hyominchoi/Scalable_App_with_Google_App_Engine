@@ -40,7 +40,7 @@ from models import ConferenceQueryForms
 from models import TeeShirtSize
 from models import Session
 from models import SessionForm
-#from models import SessionForms
+from models import SessionForms
 
 from settings import WEB_CLIENT_ID
 from settings import ANDROID_CLIENT_ID
@@ -197,7 +197,7 @@ class ConferenceApi(remote.Service):
 
 
     def _createSessionObject(self, request):
-        """Create or update Conference object, returning ConferenceForm/request."""
+        """Create or update Session object, returning SessionForm/request."""
         # preload necessary data items
         user = endpoints.get_current_user()
         if not user:
@@ -228,13 +228,13 @@ class ConferenceApi(remote.Service):
         #    data['date'] = 0
 
 
-        # generate Profile Key based on user ID and Conference
+        # generate Conference Key based on conference
         # ID based on Profile key get Conference key from ID
-        #p_key = ndb.Key(Conference, name)
-        #s_id = Session.allocate_ids(size=1, parent=p_key)[0]
-        #s_key = ndb.Key(Session, s_id, parent=p_key)
-        #data['key'] = s_key
-        data['conferenceName'] = request.name 
+        p_key = ndb.Key(Conference, request.conferenceName)
+        s_id = Session.allocate_ids(size=1, parent=p_key)[0]
+        s_key = ndb.Key(Session, s_id, parent=p_key)
+        data['key'] = s_key
+        data['conferenceName'] = request.conferenceName 
 
         # create Session
         Session(**data).put()
@@ -317,6 +317,7 @@ class ConferenceApi(remote.Service):
         prof = conf.key.parent().get()
         # return ConferenceForm
         return self._copyConferenceToForm(conf, getattr(prof, 'displayName'))
+
 
     @endpoints.method(message_types.VoidMessage, ConferenceForms,
             path='getConferencesCreated',
