@@ -99,9 +99,9 @@ class SessionForm(messages.Message):
     speaker         = messages.StringField(3)
     highlights      = messages.StringField(4)
     #date            = messages.StringField(5) #DateTimeField()
-    duration        = messages.StringField(6)
-    typeOfsession   = messages.StringField(7)
-    websafeKey      = messages.StringField(8)
+    duration        = messages.StringField(5)
+    typeOfsession   = messages.StringField(6)
+    websafeKey      = messages.StringField(7)
 
 class SessionForms(messages.Message):
     """SessionForms -- multiple Session outbound form message"""
