@@ -64,12 +64,6 @@ DEFAULTS = {
     "topics": [ "Default", "Topic" ],
 }
 
-DEFAULTS_SESSION = {
-    ## For Session ##
-    "highlights": "Default_highlights",
-    "duration": "1h",
-    "speaker": "Default_Speaker"
-}
 
 OPERATORS = {
             'EQ':   '=',
@@ -97,10 +91,10 @@ CONF_POST_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1),
 )
 
-SESSION_GET_REQUEST = endpoints.ResourceContainer(
+TYPEofSESSION_GET_REQUEST = endpoints.ResourceContainer(
     message_types.VoidMessage,
     websafeConferenceKey=messages.StringField(1),
-    typeOfSession=messages.StringField(2)
+    typeOfsession=messages.StringField(2)
 )
 
 SESSION_FORM_WEBKEY = endpoints.ResourceContainer(
@@ -211,7 +205,7 @@ class ConferenceApi(remote.Service):
         sf.check_initialized()
         return sf
 
-
+       
     @endpoints.method(SESSION_FORM_WEBKEY, SessionForm, path='session',
             http_method='POST', name='createSession')
     def createSession(self, request):
@@ -236,38 +230,27 @@ class ConferenceApi(remote.Service):
                 'No conference found with key: %s' % request.websafeConferenceKey)
 
        # if user_id != conf.organizerUserId:
-       #     raise endpoints.UnauthorizedException('Authorization required')
-
-        data = {field.name: getattr(request, field.name) for field in request.all_fields()}
-        del data['websafeKey']
-        del data['websafeConferenceKey']
-        r = SessionForm()
-        # add default values for those missing (both data model & outbound Message)
-        for df in DEFAULTS_SESSION:
-            if data[df] in (None, []):
-                data[df] = DEFAULTS_SESSION[df]
-            setattr(r, df, DEFAULTS_SESSION[df])
-
-        # convert dates from strings to Date objects; set month based on start_date
-        #if data['date']:
-        #    data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
-        #else:
-        #    data['date'] = 0
+       #     raise endpoints.UnauthorizedException('Original User Login required')
 
 
-        # generate Conference Key based on conference
-        # ID based on Profile key get Conference key from ID
-        p_key = ndb.Key(Conference, request.conferenceName)
+        p_key = ndb.Key(Conference, request.websafeConferenceKey)
         s_id = Session.allocate_ids(size=1, parent=p_key)[0]
         s_key = ndb.Key(Session, s_id, parent=p_key)
-        data['key'] = s_key
-        data['conferenceName'] = request.conferenceName 
+   
 
-        # create Session
-        Session(**data).put()
+        # create return session form
+        session = Session(
+            key = s_key,
+            name = str(request.name),
+            conferenceName = str(conf.name),
+            speaker = str(request.speaker),
+            highlights = str(request.highlights),
+            duration = str(request.duration),
+            typeOfsession = str(request.typeOfsession),
+        )
 
-        return r
-
+        session.put() 
+        return self._copySessionToForm(session)
 
     @ndb.transactional()
     def _updateConferenceObject(self, request):
@@ -309,14 +292,11 @@ class ConferenceApi(remote.Service):
         return self._copyConferenceToForm(conf, getattr(prof, 'displayName'))
 
 
-
-
     @endpoints.method(ConferenceForm, ConferenceForm, path='conference',
             http_method='POST', name='createConference')
     def createConference(self, request):
         """Create new conference."""
         return self._createConferenceObject(request)
-
     
 
     @endpoints.method(CONF_POST_REQUEST, ConferenceForm,
@@ -354,17 +334,18 @@ class ConferenceApi(remote.Service):
                 'No conference found with key: %s' %request.websafeConferenceKey)
 
         # create ancestor query for all key matches for the conference
-        sessions = Session.query(ancestor=ndb.Key(Conference, request.websafeConferenceKey))
+        sessions = Session.query(ancestor=ndb.Key(Conference, request.websafeConferenceKey)).fetch()
+
         # return set of SessionForm objects
         return SessionForms(
             items=[self._copySessionToForm(session) for session in sessions]
         )
 
-    @endpoints.method(SESSION_GET_REQUEST, SessionForms,
-            path='conference/{websafeConferenceKey}/session/{typeOfSession}',
+    @endpoints.method(TYPEofSESSION_GET_REQUEST, SessionForms,
+            path='conference/{websafeConferenceKey}/session/{typeOfsession}',
             http_method='GET', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
-        """ Given a conference (by websafeConferenceKey) and typeOfSession
+        """ Given a conference (by websafeConferenceKey) and typeOfsession
             return all sessions."""
         # get Conference object from request
         conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
@@ -373,7 +354,7 @@ class ConferenceApi(remote.Service):
                 'No conference found with key: %s' %request.websafeConferenceKey)
         # create ancestor query for all key matches for the conference
         sessions = Session.query(ancestor=ndb.Key(Conference, request.websafeConferenceKey))
-        sessions = sessions.filter(Session.typeOfSession==request.typeOfSession)
+        sessions = sessions.filter(Session.typeOfsession==request.typeOfsession).fetch()
 
         # return set of SessionForm objects
         return SessionForms(
@@ -387,7 +368,7 @@ class ConferenceApi(remote.Service):
         """ Given a speaker, return all sessions."""
         # create query for all sessions and filter with the speaker
         sessions = Session.query()
-        sessions = sessions.filter(Session.speaker==request.speaker)
+        sessions = sessions.filter(Session.speaker==request.speaker).fetch()
 
         # return set of SessionForm objects
         return SessionForms(
