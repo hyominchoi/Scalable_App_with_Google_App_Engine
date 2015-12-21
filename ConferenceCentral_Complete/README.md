@@ -30,3 +30,28 @@ App Engine application for the Udacity training course.
 [4]: https://console.developers.google.com/
 [5]: https://localhost:8080/
 [6]: https://developers.google.com/appengine/docs/python/endpoints/endpoints_tool
+
+
+## Task 1 
+1. Session has 
+	name            = ndb.StringProperty(required=True)
+    conferenceName  = ndb.StringProperty()
+    speaker         = ndb.StringProperty()
+    highlights      = ndb.StringProperty()
+    date            = ndb.DateProperty()
+    startTimeIn24hNotation = ndb.IntegerProperty()
+    duration        = ndb.IntegerProperty(required=True)
+    typeOfsession   = ndb.StringProperty(required=True)
+    inWishlist      = ndb.IntegerProperty(required=True)
+   name, speaker, date, startTimeIn44hNotation, duration (1 means 1 hour, one should change this to non-int type if needed), typeOfsession are required to create a session object. 
+   Session is a child of Conference object.
+   copySessionToForm converts Session to SessionForms.
+
+
+## Task 3 
+1. Query for sessions in a conference by popularity. Order the session objects in a 
+   conference (given by websafeConferenceKey) by inWishlist. Returns SessionForms
+1. Query for conferences in which a given speaker speaks. To do this, first find the
+   sessions in which the speaker speaks. Then, find the parent keys for the sessions to find conferences. Returns ConferenceForms.
+1. To query for a nonworkshop sessions before 7pm, we can't use two inequalities. 
+   Therefore, we should take, for example, a query looks like (!= workshop and (8am OR 9 am OR 10am OR .. 6pm))

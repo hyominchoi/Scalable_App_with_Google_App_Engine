@@ -82,25 +82,25 @@ class ConferenceForms(messages.Message):
     """ConferenceForms -- multiple Conference outbound form message"""
     items = messages.MessageField(ConferenceForm, 1, repeated=True)
 
-
 class Session(ndb.Model):
     """Session -- Session object"""
     name            = ndb.StringProperty(required=True)
     conferenceName  = ndb.StringProperty()
     speaker         = ndb.StringProperty()
     highlights      = ndb.StringProperty()
-    date            = ndb.DateProperty()
+    date            = ndb.DateProperty() 
     startTimeIn24hNotation = ndb.IntegerProperty()
     duration        = ndb.IntegerProperty(required=True)
     typeOfsession   = ndb.StringProperty(required=True)
+    inWishlist      = ndb.IntegerProperty(required=True)
 
 class SessionForm(messages.Message):
     """SessionForm -- Session outbound form message"""
     name            = messages.StringField(1)
     conferenceName  = messages.StringField(2)
     speaker         = messages.StringField(3)
-    highlights      = messages.StringField(4)
-    date            = messages.StringField(5) #DateTimeField()
+    highlights      = messages.IntegerField(4) # 1 means 1h
+    date            = messages.StringField(5) #DateTimeField() FORMAT: yyyy-mm-dd 
     startTimeIn24hNotation  = messages.IntegerField(6)
     duration        = messages.IntegerField(7)
     typeOfsession   = messages.StringField(8)

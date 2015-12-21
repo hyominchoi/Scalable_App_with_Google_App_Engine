@@ -369,6 +369,8 @@ class ConferenceApi(remote.Service):
                 # convert Date to date string; just copy others
                 if field.name.endswith('date'):
                     setattr(sf, field.name, str(getattr(session, field.name)))
+                elif field.name.endswith('inWishlist'):
+                    pass
                 else:
                     setattr(sf, field.name, getattr(session, field.name))
             elif field.name == "websafeKey":
@@ -412,6 +414,7 @@ class ConferenceApi(remote.Service):
             startTimeIn24hNotation = int(request.startTimeIn24hNotation),
             duration = int(request.duration),
             typeOfsession = str(request.typeOfsession),
+            inWishlist = int(0),
         )
         session.put() 
 
@@ -441,7 +444,8 @@ class ConferenceApi(remote.Service):
                 'No conference found with key: %s' %request.websafeConferenceKey)
 
         # create ancestor query for all key matches for the conference
-        sessions = Session.query(ancestor=ndb.Key(Conference, request.websafeConferenceKey)).fetch()
+        sessions = Session.query(ancestor=ndb.Key(Conference, request.websafeConferenceKey))
+
 
         # return set of SessionForm objects
         return SessionForms(
@@ -506,6 +510,8 @@ class ConferenceApi(remote.Service):
                 "This session is already in your wishlist" )
         else:
             prof.sessionKeysInWishlist.append(request.SessionKey)
+            session.inWishlist += 1
+            session.put()
 
         # return profile form
         return self._copyProfileToForm(prof)
@@ -774,6 +780,43 @@ class ConferenceApi(remote.Service):
 
         return ConferenceForms(
             items=[self._copyConferenceToForm(conf, "") for conf in q]
+        )
+
+## Task 3 queries:
+
+    @endpoints.method(CONF_GET_REQUEST, SessionForms, 
+            path='conference/{websafeConferenceKey}/mostWantedSession',
+            http_method='GET', name ='mostWantedSession')
+    def mostWantedSession(self, request):
+        """sort by inWishlist"""
+
+        wsck = request.websafeConferenceKey)
+        conf = ndb.Key(urlsafe=wsck).get()
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % wscf)
+
+        sessions = Session.query(ancestor=ndb.Key(Conference, wsck))
+        sessions = sessions.order(Session.inWishlist).fetch()
+
+        #return sessions sorted by inWishlist
+        return SessionForms(
+            items=[self._copySessionToForm(session) for session in sessions]
+        )
+
+    @endpoints.method(SPEAKER_GET_REQUEST, ConferenceForms, 
+            path='{speaker}/conferences',
+            http_method='GET', name='speakerInConferences')
+    def speakerInConferences(self, request):
+        """ given a speaker name, return all the conferences s/he speaks in. """
+        confs = set()
+        sessions = Session.query(Session.speaker==request.speaker).fetch()
+        for session in sessions:
+            p_key = session.parent()
+            set.add(p_key)
+        return ConferenceForms(
+            items = [self._copyConferenceToForm(ndb.Key(Conference, p_key).get()) 
+                    for p_key in confs]
         )
 
 
