@@ -1,7 +1,7 @@
 App Engine application for the Udacity training course.
 
 ## Products
-- [App Engine][1]
+- [App Engine][1] : Conference Central App
 
 ## Language
 - [Python][2]
@@ -33,16 +33,16 @@ App Engine application for the Udacity training course.
 
 
 ## Task 1 
-1. Session has 
-	name            = ndb.StringProperty(required=True)
-    conferenceName  = ndb.StringProperty()
-    speaker         = ndb.StringProperty()
-    highlights      = ndb.StringProperty()
-    date            = ndb.DateProperty()
-    startTimeIn24hNotation = ndb.IntegerProperty()
-    duration        = ndb.IntegerProperty(required=True)
-    typeOfsession   = ndb.StringProperty(required=True)
-    inWishlist      = ndb.IntegerProperty(required=True)
+1. Session has   
+    name            = ndb.StringProperty(required=True)  
+    conferenceName  = ndb.StringProperty()  
+    speaker         = ndb.StringProperty()  
+    highlights      = ndb.StringProperty()  
+    date            = ndb.DateProperty()  
+    startTimeIn24hNotation = ndb.IntegerProperty()  
+    duration        = ndb.IntegerProperty(required=True)  
+    typeOfsession   = ndb.StringProperty(required=True)  
+    inWishlist      = ndb.IntegerProperty(required=True)  
    name, speaker, date, startTimeIn44hNotation, duration (1 means 1 hour, one should change this to non-int type if needed), typeOfsession are required to create a session object. 
    Session is a child of Conference object.
    copySessionToForm converts Session to SessionForms.
