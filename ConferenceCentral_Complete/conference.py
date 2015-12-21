@@ -422,8 +422,8 @@ class ConferenceApi(remote.Service):
             'speaker': request.speaker},
             url='/tasks/set_featured_speaker'
         )
-
         return self._copySessionToForm(session)
+
 
     @endpoints.method(SESSION_FORM_WEBKEY, SessionForm, path='session',
             http_method='POST', name='createSession')
@@ -473,6 +473,7 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(session) for session in sessions]
         )
 
+
     @endpoints.method(SPEAKER_GET_REQUEST, SessionForms,
             path='/{speaker}/session',
             http_method='GET', name='getSessionsBySpeaker')
@@ -486,6 +487,7 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(session) for session in sessions]
         )
+
 
     @endpoints.method(SESSION_GET_REQUEST, ProfileForm,
             path='/sessionwishlist/{SessionKey}',
