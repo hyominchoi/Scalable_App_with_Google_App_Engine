@@ -99,10 +99,10 @@ class SessionForm(messages.Message):
     name            = messages.StringField(1)
     conferenceName  = messages.StringField(2)
     speaker         = messages.StringField(3)
-    highlights      = messages.IntegerField(4) # 1 means 1h
+    highlights      = messages.StringField(4) 
     date            = messages.StringField(5) #DateTimeField() FORMAT: yyyy-mm-dd 
     startTimeIn24hNotation  = messages.IntegerField(6)
-    duration        = messages.IntegerField(7)
+    duration        = messages.IntegerField(7) # 1 means 1h
     typeOfsession   = messages.StringField(8)
     websafeKey      = messages.StringField(9)
 
