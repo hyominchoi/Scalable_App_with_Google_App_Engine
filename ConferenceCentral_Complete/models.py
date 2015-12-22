@@ -89,8 +89,8 @@ class Session(ndb.Model):
     speaker         = ndb.StringProperty()
     highlights      = ndb.StringProperty()
     date            = ndb.DateProperty() 
-    startTimeIn24hNotation = ndb.IntegerProperty()
-    duration        = ndb.IntegerProperty(required=True)
+    startTimeIn24hNotation = ndb.TimeProperty()
+    duration        = ndb.FloatProperty(required=True)
     typeOfsession   = ndb.StringProperty(required=True)
     inWishlist      = ndb.IntegerProperty(required=True)
 
@@ -101,8 +101,8 @@ class SessionForm(messages.Message):
     speaker         = messages.StringField(3)
     highlights      = messages.StringField(4) 
     date            = messages.StringField(5) #DateTimeField() FORMAT: yyyy-mm-dd 
-    startTimeIn24hNotation  = messages.IntegerField(6)
-    duration        = messages.IntegerField(7) # 1 means 1h
+    startTimeIn24hNotation  = messages.StringField(6)
+    duration        = messages.FloatField(7) # 1 means 1h
     typeOfsession   = messages.StringField(8)
     websafeKey      = messages.StringField(9)
 

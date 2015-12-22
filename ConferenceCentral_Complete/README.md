@@ -33,25 +33,64 @@ App Engine application for the Udacity training course.
 
 
 ## Task 1 
-1. Session has   
-    name            = ndb.StringProperty(required=True)  
-    conferenceName  = ndb.StringProperty()  
-    speaker         = ndb.StringProperty()  
-    highlights      = ndb.StringProperty()  
-    date            = ndb.DateProperty()  
-    startTimeIn24hNotation = ndb.IntegerProperty()  
-    duration        = ndb.IntegerProperty(required=True)  
-    typeOfsession   = ndb.StringProperty(required=True)  
-    inWishlist      = ndb.IntegerProperty(required=True)  
-   name, speaker, date, startTimeIn44hNotation, duration (1 means 1 hour, one should change this to non-int type if needed), typeOfsession are required to create a session object. 
-   Session is a child of Conference object.
-   copySessionToForm converts Session to SessionForms.
+1. Session(ndb.Model)  
+    name            = ndb.StringProperty(required=True)
+    conferenceName  = ndb.StringProperty()
+    speaker         = ndb.StringProperty()
+    highlights      = ndb.StringProperty()
+    date            = ndb.DateProperty() 
+    startTimeIn24hNotation = ndb.TimeProperty()
+    duration        = ndb.FloatProperty(required=True)
+    typeOfsession   = ndb.StringProperty(required=True)
+    inWishlist      = ndb.IntegerProperty(required=True) 
+
+  SessionForm(messages.Message):
+    """SessionForm -- Session outbound form message"""
+    name            = messages.StringField(1)
+    conferenceName  = messages.StringField(2)
+    speaker         = messages.StringField(3)
+    highlights      = messages.StringField(4) 
+    date            = messages.StringField(5) #DateTimeField() FORMAT: yyyy-mm-dd 
+    startTimeIn24hNotation  = messages.StringField(6) #DateTimeField() FORMAT: HH:MM
+    duration        = messages.FloatField(7) # 1 means 1h
+    typeOfsession   = messages.StringField(8)
+    websafeKey      = messages.StringField(9)
+
+
+  To create a session, session name and conference key are required. If the user does not put info for some entries would be set by default values in DEFAULT_SESSION dictionary in conferece.py.
+
+  Session is a child of Conference object. Therefore, when being created, its parent key is given as a conference key.
+
+  When a session is created, the variable inWishlist is set to be 0. As a user add(or remove) the session to(from) his or her wishlist, inWishlist variable will increase(decreased) by one, and is of IntegerProperty.
+
+  The variable duration is of FloatProperty. If its value is 1, that means the duration is for an hour. O.5 means 30min.
+
+  The varaible startTimeIn24hNotation represents the start time for a session. 
+  In sessionForm, startTimeIn24hNotation is String type Message, so we have to convert one from the other when creating the session.
+   
+  The function _copySessionToForm converts Session to SessionForms(ProtoRPC).
 
 
 ## Task 3 
 1. Query for sessions in a conference by popularity. Order the session objects in a 
-   conference (given by websafeConferenceKey) by inWishlist. Returns SessionForms
-1. Query for conferences in which a given speaker speaks. To do this, first find the
-   sessions in which the speaker speaks. Then, find the parent keys for the sessions to find conferences. Returns ConferenceForms.
-1. To query for a nonworkshop sessions before 7pm, we can't use two inequalities. 
-   Therefore, we should take, for example, a query looks like (!= workshop and (8am OR 9 am OR 10am OR .. 6pm))
+   conference (given by websafeConferenceKey) by inWishlist. Returns SessionForms  
+1. Query for conferences in which a given speaker speaks. To do this, first find the  
+   sessions in which the speaker speaks. Then, find the parent keys for the sessions to  find conferences. Returns ConferenceForms.  
+1. If we were to query for sessions != workshop AND time < 19h, we encounter a problem   
+   because we can't use two inequalities on different properties. Therefore, we should   take, for example, a composite query looks like the following:  
+
+    step 1:  
+      CompositeFilter Operator OR  
+      TypeOfSession EQAL Workshop   
+      startTime EQUAL 19  
+      startTime EQUAL 20  
+      startTime EQUAL 21  
+      startTime EQUAL 22  
+      startTime EQUAL 23  
+      startTime EQUAL 24  
+    step 2: 
+      Take NOT EQUAL TO (or Complement set of) the result of step 1.
+
+
+
+

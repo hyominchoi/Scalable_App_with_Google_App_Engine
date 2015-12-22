@@ -55,8 +55,6 @@ MEMCACHE_ANNOUNCEMENTS_KEY = "RECENT_ANNOUNCEMENTS"
 MEMCACHE_ANNOUNCEMENTS_KEY_SPEAKER = "RECENT_ANNOUNCEMENTS"
 ANNOUNCEMENT_TPL = ('Last chance to attend! The following conferences '
                     'are nearly sold out: %s')
-ANNOUNCEMENT_SPK = ('Featured speaker!'
-                    'The speaks in the following Sessions: %s')
 SPEAKER_IN_CONFS = ('The speaker %s speaks in the following conferences: %s')
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -73,7 +71,6 @@ DEFAULTS_SESSION = {
     "duration": 1,
     "speaker" : "Default speaker", 
     "highlights": "Default Highlights",
-    "startTimeIn24hNotation": 0,
     "typeOfsession": "Default type",
 }
 
@@ -378,6 +375,8 @@ class ConferenceApi(remote.Service):
                 # convert Date to date string; just copy others
                 if field.name.endswith('date'):
                     setattr(sf, field.name, str(getattr(session, field.name)))
+                elif field.name.endswith('startTimeIn24hNotation'):
+                    setattr(sf, field.name, str(getattr(session, field.name)))
                 elif field.name.endswith('inWishlist'):
                     pass
                 else:
@@ -416,9 +415,14 @@ class ConferenceApi(remote.Service):
             if data[df] in (None, []):
                 data[df] = DEFAULTS_SESSION[df]
                 setattr(request, df, DEFAULTS_SESSION[df])
-        if data["date"]:
+        if data['date']:
             data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
         
+        if data['startTimeIn24hNotation']:
+            data['startTimeIn24hNotation'] = datetime.strptime(
+                data['startTimeIn24hNotation'][:5],"%H:%M").time()
+            print(data['startTimeIn24hNotation'])
+
         # define conference ancestor key
         p_key = ndb.Key(urlsafe=request.websafeConferenceKey)
         conf = p_key.get()
@@ -531,11 +535,12 @@ class ConferenceApi(remote.Service):
             session.inWishlist += 1
             session.put()
 
+        prof.put()
         # return profile form
         return self._copyProfileToForm(prof)
 
 
-    @endpoints.method(message_types.VoidMessage, SessionForms,
+    @endpoints.method(message_types.VoidMessage, StringMessage,
         path='/sessionwishlist', 
         http_method='GET', name='getSessionsInWishlist')
     def getSessionsInWishlist(self, request):
@@ -544,12 +549,16 @@ class ConferenceApi(remote.Service):
         prof = self._getProfileFromUser()
         if not prof:
             raise endpoints.UnauthorizedException('Authorization required')
-        # return the sessionForms
-        return SessionForms(
-            items=[self._copySessionToForm(ndb.Key(urlsafe=key)) 
-                for key in prof.sessionKeysInWishlist]
-        )
 
+        l = list()
+
+        for key in prof.sessionKeysInWishlist:
+            s = ndb.Key(urlsafe=key).get()
+            l.append(s.name + " in " + s.conferenceName)
+            
+        output_result =' My wishlist contains: %s' %(', '.join(name for name in l))
+        message = StringMessage(data=output_result) 
+        return message
 
 # - - - Profile objects - - - - - - - - - - - - - - - - - - -
 
@@ -660,19 +669,18 @@ class ConferenceApi(remote.Service):
         conf = ndb.Key(urlsafe=websafeConferenceKey).get()
         confname = conf.name
         sessions = Session.query(ndb.AND(
-            Session.conferenceName==confname,
-            Session.speaker==speaker)
-        ).fetch(projection=[Session.name])
+            Session.conferenceName == confname,
+            Session.speaker == speaker)).fetch(projection=[Session.name])
 
+        announcement = ""
         if sessions:
-            announcement =  ANNOUNCEMENT_SPK % (
+            announcement += 'Featured Speaker %s ' % speaker
+            announcement += 'speaks in the following sessions: %s' % (
                 ','.join(session.name for session in sessions))
             memcache.set(MEMCACHE_ANNOUNCEMENTS_KEY_SPEAKER, announcement)
         else:
             announcement = ""
             memcache.delete(MEMCACHE_ANNOUNCEMENTS_KEY_SPEAKER)
-
-        return announcement
 
 
     @endpoints.method(message_types.VoidMessage, StringMessage,
@@ -816,7 +824,7 @@ class ConferenceApi(remote.Service):
                 'No conference found with key: %s' %wsck)
 
         sessions = Session.query(ancestor=ndb.Key(urlsafe=wsck))
-        sessions = sessions.order(Session.inWishlist).fetch()
+        sessions = sessions.order(Session.inWishlist)
 
         #return sessions sorted by inWishlist
         return SessionForms(
