@@ -604,8 +604,6 @@ class ConferenceApi(remote.Service):
                 # convert t-shirt string to Enum; just copy others
                 if field.name == 'teeShirtSize':
                     setattr(pf, field.name, getattr(TeeShirtSize, getattr(prof, field.name)))
-                elif field.name == 'wishlist':
-                    pass
                 else:
                     setattr(pf, field.name, getattr(prof, field.name))
         pf.check_initialized()

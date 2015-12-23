@@ -105,3 +105,8 @@ indexes:
   - name: conferenceName
   - name: speaker
   - name: name
+
+- kind: Session
+  ancestor: yes
+  properties:
+  - name: inWishlist
