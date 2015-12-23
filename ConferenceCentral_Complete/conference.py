@@ -399,8 +399,9 @@ class ConferenceApi(remote.Service):
         if not request.name:
             raise endpoints.BadRequestException("Session 'name' field required")
 
-        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-        if not conf:
+        p_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        conf = p_key.get()
+        if not p_key:
             raise endpoints.NotFoundException(
                 'No conference found with key: %s' % request.websafeConferenceKey)
 
@@ -511,10 +512,10 @@ class ConferenceApi(remote.Service):
 
 
     @endpoints.method(SESSION_GET_REQUEST, ProfileForm,
-            path='/sessionwishlist/{SessionKey}',
+            path='/addSessionToWishlist/{SessionKey}',
             http_method='GET', name='addSessionToWishlist')
     def addSessionToWishlist(self, request):
-        """ Given a SessionKey, add the session to wishlist."""
+        """ Given a SessionKey, add the session to user's wishlist."""
         # get the current user info
         prof = self._getProfileFromUser()
         if not prof:
@@ -523,6 +524,7 @@ class ConferenceApi(remote.Service):
         # check if the SessionKey is valid
         session = ndb.Key(urlsafe=request.SessionKey).get()
         if not session:
+            print('SSS')
             raise endpoints.NotFoundException(
                 'No session found with key: %s' %request.SessionKey) 
 
@@ -534,8 +536,39 @@ class ConferenceApi(remote.Service):
             prof.sessionKeysInWishlist.append(request.SessionKey)
             session.inWishlist += 1
             session.put()
+            prof.put()
 
-        prof.put()
+        # return profile form
+        return self._copyProfileToForm(prof)
+
+
+    @endpoints.method(SESSION_GET_REQUEST, ProfileForm, 
+            path='/rmSessionFromWishlist/{SessionKey}',
+            http_method='GET', name='rmSessionFromWishlist')
+    def rmSessionFromWishlist(self, request):
+        """ Give a SessionKey, remove the session from user's wishlist."""
+                # get the current user info
+        prof = self._getProfileFromUser()
+        if not prof:
+            raise endpoints.UnauthorizedException('Authorization required')
+
+        # check if the SessionKey is valid
+        if not ndb.Key(urlsafe=request.SessionKey):
+            print("SSS")
+            raise endpoints.NotFoundException(
+                'No session found with key: %s' %request.SessionKey) 
+        session = ndb.Key(urlsafe=request.SessionKey).get()
+        
+        # check if the session is already added to wishlist
+        if request.SessionKey not in prof.sessionKeysInWishlist:
+            raise endpoints.NotFoundException(
+                'No session found in wishlist with key: %s' %request.SessionKey)
+        else:
+            prof.sessionKeysInWishlist.remove(request.SessionKey)
+            session.inWishlist -= 1
+            session.put()
+            prof.put()
+
         # return profile form
         return self._copyProfileToForm(prof)
 
@@ -571,6 +604,8 @@ class ConferenceApi(remote.Service):
                 # convert t-shirt string to Enum; just copy others
                 if field.name == 'teeShirtSize':
                     setattr(pf, field.name, getattr(TeeShirtSize, getattr(prof, field.name)))
+                elif field.name == 'wishlist':
+                    pass
                 else:
                     setattr(pf, field.name, getattr(prof, field.name))
         pf.check_initialized()

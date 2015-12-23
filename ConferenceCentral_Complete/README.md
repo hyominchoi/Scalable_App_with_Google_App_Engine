@@ -61,7 +61,7 @@ App Engine application for the Udacity training course.
 
   Session is a child of Conference object. Therefore, when being created, its parent key is given as a conference key.
 
-  When a session is created, the variable inWishlist is set to be 0. As a user add(or remove) the session to(from) his or her wishlist, inWishlist variable will increase(decreased) by one, and is of IntegerProperty.
+  When a session is created, the variable inWishlist is set to be 0. As a user add(or remove) a session to(from) his or her wishlist, inWishlist of the session will increase(decreased) by one.
 
   The variable duration is of FloatProperty. If its value is 1, that means the duration is for an hour. O.5 means 30min.
 
