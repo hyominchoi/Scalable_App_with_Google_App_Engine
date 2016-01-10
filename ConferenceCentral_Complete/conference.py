@@ -374,7 +374,7 @@ class ConferenceApi(remote.Service):
         for field in sf.all_fields():
             if hasattr(session, field.name):
                 # convert Date to date string; just copy others
-                if field.name.endswith(('date', 'startTimeIn24hNotation')):
+                if field.name.endswith(('date', 'startTime')):
                     setattr(sf, field.name, str(getattr(session, field.name)))
                 elif field.name.endswith('inWishlist'):
                     pass
@@ -417,10 +417,10 @@ class ConferenceApi(remote.Service):
         if data['date']:
             data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
         
-        if data['startTimeIn24hNotation']:
-            data['startTimeIn24hNotation'] = datetime.strptime(
-                data['startTimeIn24hNotation'][:5],"%H:%M").time()
-            print(data['startTimeIn24hNotation'])
+        if data['startTime']:
+            data['startTime'] = datetime.strptime(
+                data['startTime'][:5],"%H:%M").time()
+            print(data['startTime'])
 
         # define conference ancestor key
         p_key = ndb.Key(urlsafe=request.websafeConferenceKey)
@@ -693,11 +693,9 @@ class ConferenceApi(remote.Service):
     @staticmethod
     def _cacheFeaturedSpeaker(websafeConferenceKey, speaker):
         """ Set Featured Speaker """
-        conf = ndb.Key(urlsafe=websafeConferenceKey).get()
-        confname = conf.name
-        sessions = Session.query(ndb.AND(
-            Session.conferenceName == confname,
-            Session.speaker == speaker)).fetch(projection=[Session.name])
+        sessions = Session.query(ancestor=ndb.Key(urlsafe=websafeConferenceKey))
+        sessions = sessions.filter(Session.speaker == speaker)
+        sessions = sessions.fetch(projection=[Session.name])
 
         announcement = ""
         if sessions:

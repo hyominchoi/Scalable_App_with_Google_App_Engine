@@ -34,12 +34,12 @@ App Engine application for the Udacity training course.
 
 ## Task 1 
 1. Session(ndb.Model)  
-    name            = ndb.StringProperty(required=True)
+    name            = ndb.StringProperty(required=True) 
     conferenceName  = ndb.StringProperty()
     speaker         = ndb.StringProperty()
     highlights      = ndb.StringProperty()
     date            = ndb.DateProperty() 
-    startTimeIn24hNotation = ndb.TimeProperty()
+    startTime       = ndb.TimeProperty()
     duration        = ndb.FloatProperty(required=True)
     typeOfsession   = ndb.StringProperty(required=True)
     inWishlist      = ndb.IntegerProperty(required=True) 
@@ -51,7 +51,7 @@ App Engine application for the Udacity training course.
     speaker         = messages.StringField(3)
     highlights      = messages.StringField(4) 
     date            = messages.StringField(5) #DateTimeField() FORMAT: yyyy-mm-dd 
-    startTimeIn24hNotation  = messages.StringField(6) #DateTimeField() FORMAT: HH:MM
+    startTime       = messages.StringField(6) #DateTimeField() FORMAT: HH:MM
     duration        = messages.FloatField(7) # 1 means 1h
     typeOfsession   = messages.StringField(8)
     websafeKey      = messages.StringField(9)
@@ -65,9 +65,9 @@ App Engine application for the Udacity training course.
 
   The variable duration is of FloatProperty. If its value is 1, that means the duration is for an hour. O.5 means 30min.
 
-  The varaible startTimeIn24hNotation represents the start time for a session. 
-  In sessionForm, startTimeIn24hNotation is String type Message, so we have to convert one from the other when creating the session.
-   
+  The variable startTime is of StringProperty and represents the start time of a session. When created, the input should be of the form HH:MM where HH is in range(0,23), am/pm distinction is NOT supported.
+  When converted to Session from SessionFrom, it will be shown as HH:MM, same as the input.
+  
   The function _copySessionToForm converts Session to SessionForms(ProtoRPC).
 
 
