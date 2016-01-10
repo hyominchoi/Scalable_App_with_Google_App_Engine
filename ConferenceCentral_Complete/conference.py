@@ -56,6 +56,7 @@ MEMCACHE_ANNOUNCEMENTS_KEY_SPEAKER = "RECENT_ANNOUNCEMENTS"
 ANNOUNCEMENT_TPL = ('Last chance to attend! The following conferences '
                     'are nearly sold out: %s')
 SPEAKER_IN_CONFS = ('The speaker %s speaks in the following conferences: %s')
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 DEFAULTS = {
@@ -68,7 +69,7 @@ DEFAULTS = {
 
 DEFAULTS_SESSION = {
     ## For Session ##
-    "duration": 1,
+    "duration": 1.0,
     "speaker" : "Default speaker", 
     "highlights": "Default Highlights",
     "typeOfsession": "Default type",
@@ -373,9 +374,7 @@ class ConferenceApi(remote.Service):
         for field in sf.all_fields():
             if hasattr(session, field.name):
                 # convert Date to date string; just copy others
-                if field.name.endswith('date'):
-                    setattr(sf, field.name, str(getattr(session, field.name)))
-                elif field.name.endswith('startTimeIn24hNotation'):
+                if field.name.endswith(('date', 'startTimeIn24hNotation')):
                     setattr(sf, field.name, str(getattr(session, field.name)))
                 elif field.name.endswith('inWishlist'):
                     pass
@@ -405,8 +404,8 @@ class ConferenceApi(remote.Service):
             raise endpoints.NotFoundException(
                 'No conference found with key: %s' % request.websafeConferenceKey)
 
-       # if user_id != conf.organizerUserId:
-       # raise endpoints.UnauthorizedException('Original User Login required')
+        if user_id != conf.organizerUserId:
+        raise endpoints.UnauthorizedException('Original User Login required')
    
         data = {field.name: getattr(request, field.name) for field in request.all_fields()}
         del data['websafeKey']
@@ -415,7 +414,6 @@ class ConferenceApi(remote.Service):
         for df in DEFAULTS_SESSION:
             if data[df] in (None, []):
                 data[df] = DEFAULTS_SESSION[df]
-                setattr(request, df, DEFAULTS_SESSION[df])
         if data['date']:
             data['date'] = datetime.strptime(data['date'][:10], "%Y-%m-%d").date()
         
@@ -453,7 +451,7 @@ class ConferenceApi(remote.Service):
 
     
     @endpoints.method(CONF_GET_REQUEST, SessionForms,
-            path='conference/{websafeConferenceKey}/session',
+            path='conference/{websafeConferenceKey}/sessions',
             http_method='GET', name='getConferenceSessions')
     def getConferenceSessions(self, request):
         """Given a conference (by websafeConferenceKey) return all sessions."""
@@ -474,7 +472,7 @@ class ConferenceApi(remote.Service):
 
 
     @endpoints.method(TYPEofSESSION_GET_REQUEST, SessionForms,
-            path='conference/{websafeConferenceKey}/session/{typeOfsession}',
+            path='conference/{websafeConferenceKey}/sessions/type/{typeOfsession}',
             http_method='GET', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
         """ Given a conference (by websafeConferenceKey) and typeOfsession
@@ -497,7 +495,7 @@ class ConferenceApi(remote.Service):
 
 
     @endpoints.method(SPEAKER_GET_REQUEST, SessionForms,
-            path='/conference/session/{speaker}',
+            path='/conference/sessions/speaker/{speaker}',
             http_method='GET', name='getSessionsBySpeaker')
     def getSessionsBySpeaker(self, request):
         """ Given a speaker, return all sessions."""
@@ -513,7 +511,7 @@ class ConferenceApi(remote.Service):
 
     @endpoints.method(SESSION_GET_REQUEST, ProfileForm,
             path='/addSessionToWishlist/{SessionKey}',
-            http_method='GET', name='addSessionToWishlist')
+            http_method='PUT', name='addSessionToWishlist')
     def addSessionToWishlist(self, request):
         """ Given a SessionKey, add the session to user's wishlist."""
         # get the current user info
@@ -544,7 +542,7 @@ class ConferenceApi(remote.Service):
 
     @endpoints.method(SESSION_GET_REQUEST, ProfileForm, 
             path='/rmSessionFromWishlist/{SessionKey}',
-            http_method='GET', name='rmSessionFromWishlist')
+            http_method='DELETE', name='rmSessionFromWishlist')
     def rmSessionFromWishlist(self, request):
         """ Give a SessionKey, remove the session from user's wishlist."""
                 # get the current user info
@@ -573,7 +571,7 @@ class ConferenceApi(remote.Service):
         return self._copyProfileToForm(prof)
 
 
-    @endpoints.method(message_types.VoidMessage, StringMessage,
+    @endpoints.method(message_types.VoidMessage, SessionForms,
         path='/sessionwishlist', 
         http_method='GET', name='getSessionsInWishlist')
     def getSessionsInWishlist(self, request):
@@ -583,15 +581,11 @@ class ConferenceApi(remote.Service):
         if not prof:
             raise endpoints.UnauthorizedException('Authorization required')
 
-        l = list()
-
-        for key in prof.sessionKeysInWishlist:
-            s = ndb.Key(urlsafe=key).get()
-            l.append(s.name + " in " + s.conferenceName)
+        return SessionForms(
+            items=[self._copySessionToForm(ndb.Key(urlsafe=key)) 
+                for key in prof.sessionKeysInWishlist]
+        )
             
-        output_result =' My wishlist contains: %s' %(', '.join(name for name in l))
-        message = StringMessage(data=output_result) 
-        return message
 
 # - - - Profile objects - - - - - - - - - - - - - - - - - - -
 
