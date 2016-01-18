@@ -7,6 +7,7 @@ main.py -- Udacity conference server-side Python App Engine
 $Id$
 
 created by wesc on 2014 may 24
+forked and modified by hyomin.choi in Dec 2015 
 
 """
 

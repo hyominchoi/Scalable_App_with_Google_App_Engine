@@ -8,7 +8,7 @@ $Id: conference.py,v 1.25 2014/05/24 23:42:19 wesc Exp wesc $
 
 created by wesc on 2014 apr 21
 
-added functionality in December 2015
+added functionality in December 2015 by hyomin.choi
 
 """
 
@@ -834,7 +834,7 @@ class ConferenceApi(remote.Service):
             items=[self._copyConferenceToForm(conf, "") for conf in q]
         )
 
-## Task 3 queries:
+## Additional queries:
 
     @endpoints.method(CONF_GET_REQUEST, SessionForms, 
             path='conference/{websafeConferenceKey}/mostWantedSession',
