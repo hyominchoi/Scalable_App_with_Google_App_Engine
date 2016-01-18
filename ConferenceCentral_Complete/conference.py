@@ -405,7 +405,7 @@ class ConferenceApi(remote.Service):
                 'No conference found with key: %s' % request.websafeConferenceKey)
 
         if user_id != conf.organizerUserId:
-        raise endpoints.UnauthorizedException('Original User Login required')
+            raise endpoints.UnauthorizedException('Original User Login required')
    
         data = {field.name: getattr(request, field.name) for field in request.all_fields()}
         del data['websafeKey']
@@ -552,7 +552,6 @@ class ConferenceApi(remote.Service):
 
         # check if the SessionKey is valid
         if not ndb.Key(urlsafe=request.SessionKey):
-            print("SSS")
             raise endpoints.NotFoundException(
                 'No session found with key: %s' %request.SessionKey) 
         session = ndb.Key(urlsafe=request.SessionKey).get()
@@ -580,12 +579,16 @@ class ConferenceApi(remote.Service):
         prof = self._getProfileFromUser()
         if not prof:
             raise endpoints.UnauthorizedException('Authorization required')
+        
+        sessions = list()
+        for key in prof.sessionKeysInWishlist: 
+            s = ndb.Key(urlsafe=key).get()
+            sessions.append(s)
 
         return SessionForms(
-            items=[self._copySessionToForm(ndb.Key(urlsafe=key)) 
-                for key in prof.sessionKeysInWishlist]
+            items=[self._copySessionToForm(session) for session in sessions]
         )
-            
+
 
 # - - - Profile objects - - - - - - - - - - - - - - - - - - -
 

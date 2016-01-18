@@ -110,3 +110,9 @@ indexes:
   ancestor: yes
   properties:
   - name: inWishlist
+
+- kind: Session
+  ancestor: yes
+  properties:
+  - name: speaker
+  - name: name
